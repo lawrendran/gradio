@@ -127,7 +127,7 @@ def decode_base64_to_binary(encoding):
         header, data = encoding.split(",")
         header = header[5:]
         if ";base64" in header:
-            header = header[0:header.index(";base64")]
+            header = header[:header.index(";base64")]
         if "/" in header:
             extension = header[header.index("/") + 1:]
     else:
@@ -141,7 +141,7 @@ def decode_base64_to_file(encoding, encryption_key=None, file_path=None):
         filename = os.path.basename(file_path)
         prefix = filename
         if "." in filename:
-            prefix = filename[0: filename.index(".")]
+            prefix = filename[:filename.index(".")]
             extension = filename[filename.index(".") + 1:]
     if extension is None:
         extension = mime_extension
@@ -159,7 +159,7 @@ def create_tmp_copy_of_file(file_path):
     file_name = os.path.basename(file_path)
     prefix, extension = file_name, None
     if "." in file_name:
-        prefix = file_name[0: file_name.index(".")]
+        prefix = file_name[:file_name.index(".")]
         extension = file_name[file_name.index(".") + 1:]
     if extension is None:
         file_obj = tempfile.NamedTemporaryFile(delete=False, prefix=prefix)
@@ -281,10 +281,7 @@ def _convert(image, dtype, force_copy=False, uniform=False):
         kind = a.dtype.kind
         if n > m and a.max() < 2 ** m:
             mnew = int(np.ceil(m / 2) * 2)
-            if mnew > m:
-                dtype = "int{}".format(mnew)
-            else:
-                dtype = "uint{}".format(mnew)
+            dtype = "int{}".format(mnew) if mnew > m else "uint{}".format(mnew)
             n = int(np.ceil(n / 2) * 2)
             return a.astype(_dtype_bits(kind, m))
         elif n == m:

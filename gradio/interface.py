@@ -186,7 +186,9 @@ class Interface:
         self.local_url = None
         self.show_tips = show_tips
         self.requires_permissions = any(
-            [component.requires_permissions for component in self.input_components])
+            component.requires_permissions for component in self.input_components
+        )
+
         self.enable_queue = enable_queue
         self.api_mode = api_mode
 
@@ -298,17 +300,16 @@ class Interface:
                     raise FileNotFoundError(
                         "Could not find examples directory: " + self.examples)
                 log_file = os.path.join(self.examples, "log.csv")
-                if not os.path.exists(log_file):
-                    if len(self.input_components) == 1:
-                        examples = [[os.path.join(self.examples, item)]
-                                    for item in os.listdir(self.examples)]
-                    else:
-                        raise FileNotFoundError(
-                            "Could not find log file (required for multiple inputs): " + log_file)
-                else:
+                if os.path.exists(log_file):
                     with open(log_file) as logs:
                         examples = list(csv.reader(logs))
                         examples = examples[1:]  # remove header
+                elif len(self.input_components) == 1:
+                    examples = [[os.path.join(self.examples, item)]
+                                for item in os.listdir(self.examples)]
+                else:
+                    raise FileNotFoundError(
+                        "Could not find log file (required for multiple inputs): " + log_file)
                 for i, example in enumerate(examples):
                     for j, (interface, cell) in enumerate(zip(self.input_components + self.output_components, example)):
                         examples[i][j] = interface.restore_flagged(cell)
@@ -659,8 +660,6 @@ class Interface:
             elif self.local_url:
                 requests.get("{}shutdown".format(self.local_url))
                 print("Closing Gradio server on port {}...".format(self.server_port))
-            else:
-                pass # server not running
         except (requests.ConnectionError, ConnectionResetError):
             pass  # server is already closed
 
@@ -671,10 +670,9 @@ class Interface:
             comet_ml.log_other("Created from", "Gradio")
             if self.share_url is not None:
                 comet_ml.log_text("gradio: " + self.share_url)
-                comet_ml.end()
             else:
                 comet_ml.log_text("gradio: " + self.local_url)
-                comet_ml.end()
+            comet_ml.end()
         if wandb is not None:
             analytics_integration = "WandB"
             if self.share_url is not None:
@@ -691,16 +689,15 @@ class Interface:
             else:
                 mlflow.log_param("Gradio Interface Local Link",
                                  self.local_url)
-        if self.analytics_enabled:
-            if analytics_integration:
-                data = {'integration': analytics_integration}
-                try:
-                    requests.post(analytics_url +
-                                  'gradio-integration-analytics/',
-                                  data=data, timeout=3)
-                except (
-                        requests.ConnectionError, requests.exceptions.ReadTimeout):
-                    pass  # do not push analytics if no network
+        if self.analytics_enabled and analytics_integration:
+            data = {'integration': analytics_integration}
+            try:
+                requests.post(analytics_url +
+                              'gradio-integration-analytics/',
+                              data=data, timeout=3)
+            except (
+                    requests.ConnectionError, requests.exceptions.ReadTimeout):
+                pass  # do not push analytics if no network
 
 
 def show_tip(io):
@@ -729,8 +726,8 @@ def launch_counter():
 
 
 def send_error_analytics(analytics_enabled):
-    data = {'error': 'RuntimeError in launch method'}
     if analytics_enabled:
+        data = {'error': 'RuntimeError in launch method'}
         try:
             requests.post(analytics_url + 'gradio-error-analytics/',
                           data=data, timeout=3)

@@ -20,12 +20,14 @@ def launch_demo(demo_name, port):
     with open('run.py', 'r') as file:
         filedata = file.read()
     filedata = filedata.replace(
-        f'if __name__ == "__main__":', 
-        f'if __name__ == "__main__":\n    iface.server_port={port}')
+        'if __name__ == "__main__":',
+        f'if __name__ == "__main__":\n    iface.server_port={port}',
+    )
+
     print(filedata)
     with open('run.py', 'w') as file:
         file.write(filedata)
-    subprocess.call(f"python run.py", shell=True)
+    subprocess.call('python run.py', shell=True)
 
 for demo_name, port in demo_port_sets:
     demo_thread = threading.Thread(target=launch_demo, args=(demo_name, port))
