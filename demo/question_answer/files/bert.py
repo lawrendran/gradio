@@ -28,10 +28,7 @@ class QA:
         self.n_best_size = 20
         self.max_answer_length = 30
         self.model, self.tokenizer = self.load_model(model_path)
-        if torch.cuda.is_available():
-            self.device = 'cuda'
-        else:
-            self.device = 'cpu'
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model.to(self.device)
         self.model.eval()
 
@@ -71,5 +68,11 @@ class QA:
                                     start_logits = to_list(outputs[0][i]),
                                     end_logits   = to_list(outputs[1][i]))
                 all_results.append(result)
-        answer = get_answer(example,features,all_results,self.n_best_size,self.max_answer_length,self.do_lower_case)
-        return answer
+        return get_answer(
+            example,
+            features,
+            all_results,
+            self.n_best_size,
+            self.max_answer_length,
+            self.do_lower_case,
+        )

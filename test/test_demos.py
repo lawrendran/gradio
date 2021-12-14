@@ -23,7 +23,7 @@ os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
 
 def wait_for_url(url):
-    for i in range(TIMEOUT):
+    for _ in range(TIMEOUT):
         try:
             requests.get(url)
             print("Interface connected.")

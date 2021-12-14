@@ -214,22 +214,20 @@ def predict():
                 username=current_user.id if current_user.is_authenticated else None)
             output["flag_index"] = flag_index
         except Exception as e:
-            print(str(e))
-            pass
+            print(e)
     return jsonify(output)
 
 
 def get_types(cls_set, component):
     docset = []
     types = []
-    if component == "input":
-        for cls in cls_set:
+    for cls in cls_set:
+        if component == "input":
             doc = inspect.getdoc(cls.preprocess)
             doc_lines = doc.split("\n")
             docset.append(doc_lines[1].split(":")[-1])
             types.append(doc_lines[1].split(")")[0].split("(")[-1])
-    else:
-        for cls in cls_set:
+        else:
             doc = inspect.getdoc(cls.postprocess)
             doc_lines = doc.split("\n")
             docset.append(doc_lines[-1].split(":")[-1])
@@ -422,7 +420,6 @@ def queue_thread(path_to_local_server, test_mode=False):
                 time.sleep(1)
         except Exception as e:
             time.sleep(1)
-            pass
         if test_mode:
             break
 
@@ -434,13 +431,12 @@ def start_server(interface, server_name, server_port=None, auth=None, ssl=None):
         server_port, server_port + TRY_NUM_PORTS
     )
     path_to_local_server = "http://{}:{}/".format(server_name, port)
-    if auth is not None:
-        if not callable(auth):
-            app.auth = {account[0]: account[1] for account in auth}
-        else:
-            app.auth = auth
-    else:
+    if auth is None:
         app.auth = None
+    elif not callable(auth):
+        app.auth = {account[0]: account[1] for account in auth}
+    else:
+        app.auth = auth
     app.interface = interface
     app.cwd = os.getcwd()
     log = logging.getLogger('werkzeug')
@@ -479,8 +475,7 @@ def url_request(url):
         req = urllib.request.Request(
             url=url, headers={"content-type": "application/json"}
         )
-        res = urllib.request.urlopen(req, timeout=10)
-        return res
+        return urllib.request.urlopen(req, timeout=10)
     except Exception as e:
         raise RuntimeError(str(e))
 

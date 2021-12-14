@@ -513,10 +513,7 @@ class CheckboxGroup(InputComponent):
         """
         final_scores = []
         for choice, score in zip(self.choices, scores):
-            if choice in x:
-                score_set = [score, None]
-            else:
-                score_set = [None, score]
+            score_set = [score, None] if choice in x else [None, score]
             final_scores.append(score_set)
         return final_scores
 
@@ -737,16 +734,15 @@ class Image(InputComponent):
             return im
         elif self.type == "numpy":
             return np.array(im)
-        elif self.type == "file" or self.type == "filepath":
+        elif self.type in ["file", "filepath"]:
             file_obj = tempfile.NamedTemporaryFile(delete=False, suffix=(
                 "."+fmt.lower() if fmt is not None else ".png"))
             im.save(file_obj.name)
-            if self.type == "file":
-                warnings.warn(
-                    "The 'file' type has been deprecated. Set parameter 'type' to 'filepath' instead.", DeprecationWarning)
-                return file_obj
-            else:
+            if self.type != "file":
                 return file_obj.name
+            warnings.warn(
+                "The 'file' type has been deprecated. Set parameter 'type' to 'filepath' instead.", DeprecationWarning)
+            return file_obj
         else:
             raise ValueError("Unknown type: " + str(self.type) +
                              ". Please choose from: 'numpy', 'pil', 'filepath'.")
@@ -793,7 +789,7 @@ class Image(InputComponent):
         resized_and_cropped_image = np.array(x)
         try:
             from skimage.segmentation import slic
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             raise ValueError(
                 "Error: running this interpretation for images requires scikit-image, please install it first.")
         try:
@@ -819,7 +815,7 @@ class Image(InputComponent):
         segments_slic, resized_and_cropped_image = self._segment_by_slic(x)
         tokens, masks, leave_one_out_tokens = [], [], []
         replace_color = np.mean(resized_and_cropped_image, axis=(0, 1))
-        for (i, segment_value) in enumerate(np.unique(segments_slic)):
+        for segment_value in np.unique(segments_slic):
             mask = (segments_slic == segment_value)
             image_screen = np.copy(resized_and_cropped_image)
             image_screen[segments_slic == segment_value] = replace_color
@@ -921,8 +917,8 @@ class Video(InputComponent):
         file_name = file.name
         uploaded_format = file_name.split(".")[-1].lower()
         if self.type is not None and uploaded_format != self.type:
-            output_file_name = file_name[0: file_name.rindex(
-                ".") + 1] + self.type
+            output_file_name = (file_name[:file_name.rindex(
+                ".") + 1] + self.type)
             ff = FFmpeg(
                 inputs={file_name: None},
                 outputs={output_file_name: None}
